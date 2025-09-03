@@ -1,0 +1,19 @@
+// To be run when the hair workspace is the active project
+() {
+    ~ string GENERIC_FP = "./generic.ses";
+    
+    ~ string[] IDs = [
+        "farmer", "gi", "snowsuit"
+    ];
+
+    ~ {string:int} incidence = {
+        "farmer": 3, 
+        "gi": 2, 
+        "snowsuit": 2
+    };
+
+    ~ script generic = $SE.read_script(GENERIC_FP);
+    ~ project p = $SE.get_project();
+
+    generic.run(IDs, incidence, "outfit", p.get_layer("Outfits"));
+}

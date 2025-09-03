@@ -1,0 +1,56 @@
+(-> style) {
+    ~ string id = "example";
+    ~ int[] dims = [ 32, 32 ];
+    ~ string[] directions = [ $TDSM.N, $TDSM.W, $TDSM.S, $TDSM.E ];
+    ~ bool orientation = $TDSM.HORZ;
+
+    // animations
+    ~ string A_ID_WALK = "walk";
+    ~ string A_ID_RUN = "run";
+    ~ string A_ID_IDLE = "idle";
+    ~ anim[] anims = define_anims();
+
+    // Auxiliary
+    ~ (sheet -> (string -> image)) def_composer =
+            $Init.default_composer(directions, orientation, anims);
+
+    // globally referenced layers
+    ~ layer body = $Init.asset_layer("body", dims, read_image("./bases/body/body.png"), 
+            def_composer, c -> $Init.replacement(-1, c2 -> c2));
+
+    ~ {bool : layer<>} layers = define_layers();
+
+    return $Init.style(id, dims, directions, orientation, anims, layers);
+}
+
+// METADATA
+
+name(-> string) -> "Tutorial example"
+
+info(-> string) -> "This sprite style is an example used in a tutorial video"
+
+settings(-> string[]) -> []
+
+preview_scale(-> int) -> 2
+
+// end of METADATA
+
+define_anims(-> anim[]) {
+    return [
+        $Init.anim(A_ID_WALK, [ 10, 10, 10 ], 
+                $Init.simple_frame_coord_func(0, 0, orientation), true),
+        $Init.anim(A_ID_IDLE, [ 12 ], 
+                $Init.simple_frame_coord_func(0, 0, orientation), false),
+        $Init.anim(A_ID_RUN, [ 6, 6, 6 ], 
+                $Init.simple_frame_coord_func(0, 0, orientation), true)
+    ];
+}
+
+define_layers(-> {bool : layer<>}) {
+    // TODO
+
+    ~ layer<> assembly = < body >;
+    ~ layer<> custom = <>;
+
+    return { $Init.ASSEMBLY : assembly, $Init.CUSTOM : custom };
+}

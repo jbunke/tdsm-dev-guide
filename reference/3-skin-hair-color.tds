@@ -1,0 +1,202 @@
+(-> style) {
+    ~ string id = "example";
+    ~ int[] dims = [ 32, 32 ];
+    ~ string[] directions = [ $TDSM.S, $TDSM.W, $TDSM.E, $TDSM.N ];
+    ~ bool orientation = $TDSM.HORZ;
+
+    // animations
+    ~ string A_ID_WALK = "walk";
+    ~ string A_ID_RUN = "run";
+    ~ string A_ID_IDLE = "idle";
+    ~ anim[] anims = define_anims();
+
+    // Auxiliary
+    ~ (sheet -> (string -> image)) def_composer =
+            $Init.default_composer(directions, orientation, anims);
+
+    // Colors
+    ~ color BASE_SKIN = #b8f8b8;
+    ~ color BASE_HAIR = #b0b0f8;
+    ~ color BASE_IRIS = #ff0000;
+
+    ~ color[] BASE_CLOTH = [
+        #f08080, #f0b880, #f0f080, #b8f080
+    ];
+
+    ~ color{} SKIN = { BASE_SKIN, #98e898, #70d870 };
+    ~ color{} OUTLINE = {  #557840, #364030 };
+    ~ color{} HAIR = { BASE_HAIR, #8080f0, #4848c8, #303070 };
+    ~ color{} IRIS = { BASE_IRIS, #884848 };
+
+    ~ color{}[] CLOTH = [
+        { BASE_CLOTH[0], #f8b0b0, #c84848, #703030 }, 
+        { BASE_CLOTH[1], #f8d4b0, #c88848, #705030 }, 
+        { BASE_CLOTH[2], #f8f8b0, #c8c848, #707030 }, 
+        { BASE_CLOTH[3], #d4f8b0, #88c848, #507030 }
+    ];
+
+    // Swatches
+    ~ color[] skin_swatches = [
+         #f8d0b8, #a88050, #c89060, #f8e0b8, 
+         #986860, #986840, #58402e 
+    ];
+    ~ color[] hair_swatches = [
+        #404040, #342820, #4b382c, #684828, 
+        #82662d, #b2864b, #c4b880, #dedbb8, 
+        #888480, #c4beb8
+    ];
+    ~ color[] iris_swatches = [
+        #000000, #402016, #7c6424, #506c32, 
+        #70207c, #70a0c0
+    ];
+    ~ color[] clothes_swatches = [
+        #cbcbce, #383838, #e06040, #4060e0,
+        #a040e0, #309ea4, #c0709c, #70c070,
+        #f8b020, #784040, #609038, #989090
+    ];
+
+    // Color selections
+    ~ col_sel skin_tone = $Init.col_sel("Skin tone", true, skin_swatches);
+    ~ col_sel hair_col = $Init.col_sel("Hair color", true, hair_swatches);
+    ~ col_sel hair_acc_col = $Init.col_sel("Accessory", true, clothes_swatches);
+
+    // Globally referenced layers
+    ~ string BODY_ID = "body";
+    ~ layer body = $Init.asset_layer(BODY_ID, dims, get_asset(BODY_ID, BODY_ID), 
+            def_composer, ::replace);
+    body.add_influences([ skin_tone ]);
+
+    ~ {bool : layer<>} layers = define_layers();
+
+    return $Init.style(id, dims, directions, orientation, anims, layers);
+}
+
+// METADATA
+
+name(-> string) -> "Tutorial example"
+
+info(-> string) -> "This sprite style is an example used in a tutorial video"
+
+settings(-> string[]) -> []
+
+preview_scale(-> int) -> 2
+
+// end of METADATA
+
+define_anims(-> anim[]) {
+    return [
+        $Init.anim(A_ID_WALK, [ 10, 10, 10 ], 
+                $Init.simple_frame_coord_func(0, 0, orientation), true),
+        $Init.anim(A_ID_IDLE, [ 12 ], 
+                $Init.simple_frame_coord_func(1, 0, orientation), false),
+        $Init.anim(A_ID_RUN, [ 6, 6, 6 ], 
+                $Init.simple_frame_coord_func(3, 0, orientation), true)
+    ];
+}
+
+define_layers(-> {bool : layer<>}) {
+    ~ layer col_layer = $Init.col_sel_layer(
+        "colors", [ skin_tone, hair_col ]
+    );
+    
+    ~ string HAIR_ID = "hair";
+    ~ layer hair = $Init.asset_choice_layer(
+        HAIR_ID, dims, s -> get_asset(HAIR_ID, s), get_choices(HAIR_ID, ::hair_split), 
+        $Init.no_choice_equal(), def_composer, [ 0, 0 ]
+    );
+    hair.add_influences([ skin_tone, hair_col ]);
+
+    // TODO
+
+    ~ layer<> assembly = < body, hair >;
+    ~ layer<> custom = < col_layer, hair >;
+
+    return { $Init.ASSEMBLY : assembly, $Init.CUSTOM : custom };
+}
+
+get_asset(string layer_id, string asset_id -> image) -> 
+        read_image("./bases/" + layer_id + "/" + asset_id + ".png")
+
+get_choices(
+    ~ string layer_id, ~ (string -> asset_choice) post_split_func -> 
+    asset_choice[]
+) {
+    ~ string csv = read_file("./bases/" + layer_id + "/" + layer_id + ".csv");
+    ~ string[] split = csv.split(",");
+    ~ int n = #| split;
+
+    ~ asset_choice[] choices = new asset_choice[n];
+
+    for (int i = 0; i < n; i++)
+        choices[i] = post_split_func.call(split[i]);
+    
+    return choices;
+}
+
+hair_split(string csv_entry -> asset_choice) {
+    ~ string[] split = csv_entry.split(":");
+
+    if (#| split == 2 && (int) split[1] == 1) {
+        ~ string id = split[0];
+        ~ col_sel[] sels = [ hair_acc_col ];
+
+        return $Init.asset_choice(id, c -> replace_n_sels(c, 1), sels);
+    } else
+        return $Init.asset_choice(csv_entry, ::replace, new col_sel[0]);
+}
+
+replace(~ color c -> replacement) -> replace_n_sels(c, 0)
+
+replace_n_sels(~ color input, ~ int n -> replacement) {
+    ~ color rgb_input = rgb_only(input);
+
+    int index = -1;
+    color b = #000000;
+
+    ~ bool is_skin = SKIN.has(rgb_input);
+    ~ bool is_outline = OUTLINE.has(rgb_input);
+    ~ bool is_hair = HAIR.has(rgb_input);
+    ~ bool is_iris = IRIS.has(rgb_input);
+    
+    bool found = false;
+    for (int i = 0; i < n && !found; i++) {
+        ~ color{} REPL = CLOTH[i];
+
+        if (REPL.has(rgb_input)) {
+            index = i;
+            b = BASE_CLOTH[i];
+            found = true;
+        }
+    }
+
+    if (is_skin || is_outline) {
+        index = n;
+        b = BASE_SKIN;
+    } else if (is_hair) {
+        index = n + 1;
+        b = BASE_HAIR;
+    } else if (is_iris) {
+        index = n + 2;
+        b = BASE_IRIS;
+    }
+
+    ~ color base = b;
+
+    return $Init.replacement(index, c -> {
+        ~ float s_ratio = (c.sat * input.sat) / base.sat;
+        ~ float v_ratio = (c.val * input.val) / base.val;
+        ~ float s = clamp(0.0, s_ratio, 1.0);
+        ~ float v = clamp(0.0, v_ratio, 1.0);
+
+        if (is_outline) {
+            ~ float hue_diff = base.hue - input.hue;
+            ~ float hue = $ColorProc.normalize_hue(c.hue - hue_diff);
+
+            return $ColorProc.hsv(hue, s, v);
+        }
+
+        return $ColorProc.hsv(c.hue, s, v, input.a);
+    });
+}
+
+rgb_only(~ color c -> color) -> rgb(c.r, c.g, c.b)
