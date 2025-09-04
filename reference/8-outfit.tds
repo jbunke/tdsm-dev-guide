@@ -184,9 +184,9 @@ outfit_split(string csv_entry -> asset_choice) {
 
     if (num_sels == 2)
         return $Init.asset_choice(id, c -> replace_n_sels(c, 2), 
-                [ outfit_cols[0], outfit_cols[1] ])
+                [ outfit_cols[0], outfit_cols[1] ]);
     
-    return $Init.asset_choice(id, c -> replace_n_sels(c, 3), outfit_cols)
+    return $Init.asset_choice(id, c -> replace_n_sels(c, 3), outfit_cols);
 }
 
 compose_eyes(~ sheet sh -> (string -> image)) {
