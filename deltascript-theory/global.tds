@@ -1,0 +1,24 @@
+() {
+    int var1 = 0;           // global
+
+    if (flip_coin()) {
+        int var2 = 0;       // not global; inside if
+    }
+
+    (-> int) f = () -> {
+        int var3 = 0;       // not global; inside anon function
+        return var3;
+    };
+
+    helper();
+
+    int var4 = 0;           // global
+}
+
+helper() {
+    print(var1);            // valid
+    print(var2);            // invalid; cannot resolve var2
+    print(var3);            // invalid; cannot resolve var3
+    print(var4);            // invalid; var4 not yet initialized
+}
+

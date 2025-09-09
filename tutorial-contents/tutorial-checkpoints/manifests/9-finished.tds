@@ -10,10 +10,10 @@
     ~ string A_ID_IDLE = "idle";
     ~ anim[] anims = define_anims();
 
-    // Auxiliary
-    ~ (sheet -> (string -> image)) def_composer =
+    // auxiliary
+    ~ (sheet -> (string -> image)) def_composer = 
             $Init.default_composer(directions, orientation, anims);
-
+    
     // Colors
     ~ color BASE_SKIN = #b8f8b8;
     ~ color BASE_HAIR = #b0b0f8;
@@ -69,7 +69,7 @@
         $Init.col_sel("3rd", true, clothes_swatches)
     ];
 
-    // Globally referenced layers
+    // globally referenced layers
     ~ string BODY_ID = "body";
     ~ layer body = $Init.asset_layer(
         BODY_ID, dims, get_asset(BODY_ID, BODY_ID), 
@@ -87,7 +87,7 @@
     return $Init.style(id, dims, directions, orientation, anims, layers);
 }
 
-// METADATA
+// METADATA FUNCTIONS
 
 name(-> string) -> "Tutorial example"
 
@@ -97,14 +97,14 @@ settings(-> string[]) -> []
 
 preview_scale(-> int) -> 2
 
-// end of METADATA
+// END OF METADATA FUNCTIONS
 
 define_anims(-> anim[]) {
     return [
         $Init.anim(A_ID_WALK, [ 10, 10, 10 ], 
-                $Init.simple_frame_coord_func(0, 0, orientation), true),
+                $Init.simple_frame_coord_func(0, 0, orientation), true), 
         $Init.anim(A_ID_IDLE, [ 12 ], 
-                $Init.simple_frame_coord_func(1, 0, orientation), false),
+                $Init.simple_frame_coord_func(1, 0, orientation), false), 
         $Init.anim(A_ID_RUN, [ 6, 6, 6 ], 
                 $Init.simple_frame_coord_func(3, 0, orientation), true)
     ];
@@ -129,7 +129,7 @@ define_layers(-> {bool : layer<>}) {
     ~ layer eyes = $Init.asset_choice_layer(
         EYES_ID, dims, s -> get_asset(EYES_ID, s), 
         get_choices(EYES_ID, s -> $Init.asset_choice(s, ::replace, new col_sel[0])), 
-        $Init.no_choice_prob(0.0), ::compose_eyes, [ 0, 0]
+        $Init.no_choice_prob(0.0), ::compose_eyes, [ 0, 0 ]
     );
     eyes.add_influences([ skin_tone, eyebrow_col, eye_col ]);
     eyes.choose(0);
@@ -140,18 +140,18 @@ define_layers(-> {bool : layer<>}) {
         get_choices(OUTFIT_ID, ::outfit_split), 
         $Init.no_choice_prob(0.0), def_composer, [ 0, 0 ]
     );
-
+    
     ~ layer<> assembly = < body, hair, eyes, outfit >;
-    ~ layer<> custom = <
+    ~ layer<> custom = < 
         skin_layer, hair, hair_col_layer, 
-        eyes, eye_col_layer, eye_height, 
+        eyes, eye_col_layer, eye_height,
         outfit
     >;
 
     return { $Init.ASSEMBLY : assembly, $Init.CUSTOM : custom };
 }
 
-get_asset(string layer_id, string asset_id -> image) -> 
+get_asset(~ string layer_id, ~ string asset_id -> image) -> 
         read_image("./bases/" + layer_id + "/" + asset_id + ".png")
 
 get_choices(
@@ -178,11 +178,11 @@ hair_split(string csv_entry -> asset_choice) {
         ~ col_sel[] sels = [ hair_acc_col ];
 
         return $Init.asset_choice(id, c -> replace_n_sels(c, 1), sels);
-    } else
+    } else 
         return $Init.asset_choice(csv_entry, ::replace, new col_sel[0]);
 }
 
-outfit_split(string csv_entry -> asset_choice) {
+outfit_split(~ string csv_entry -> asset_choice) {
     ~ string[] split = csv_entry.split(":");
 
     ~ string id = split[0];
@@ -201,7 +201,7 @@ compose_eyes(~ sheet sh -> (string -> image)) {
         ~ string anim_id = $Util.extract_anim_id(sprite_id);
         ~ int frame = $Util.extract_frame(sprite_id);
 
-        ~ image content = new_image_of(dims[$TDSM.X], dims[$TDSM.Y]);
+        ~ image content = new_image_of(dims[$TDSM.X], dims[$TDSM.Y]); // dims[0], dims[1]
         ~ image sprite = sh.sprite_at(head_x(dir), 0);
 
         int offset_x = 0;
@@ -233,7 +233,7 @@ compose_eyes(~ sheet sh -> (string -> image)) {
                 }
             }
         }
-        
+
         // eye height offset
         offset_y -= eye_height.get_value();
 
@@ -247,7 +247,7 @@ head_x(~ string dir -> int) {
         if (dir == directions[i])
             return i;
     
-    return -1;
+    return -1; // never reached with valid input
 }
 
 replace(~ color c -> replacement) -> replace_n_sels(c, 0)
@@ -262,17 +262,6 @@ replace_n_sels(~ color input, ~ int n -> replacement) {
     ~ bool is_outline = OUTLINE.has(rgb_input);
     ~ bool is_hair = HAIR.has(rgb_input);
     ~ bool is_iris = IRIS.has(rgb_input);
-    
-    bool found = false;
-    for (int i = 0; i < n && !found; i++) {
-        ~ color{} REPL = CLOTH[i];
-
-        if (REPL.has(rgb_input)) {
-            index = i;
-            b = BASE_CLOTH[i];
-            found = true;
-        }
-    }
 
     if (is_skin || is_outline) {
         index = n;
@@ -283,6 +272,18 @@ replace_n_sels(~ color input, ~ int n -> replacement) {
     } else if (is_iris) {
         index = n + 2;
         b = BASE_IRIS;
+    }
+
+    // clothing checks
+    bool found = false;
+    for (int i = 0; i < n && !found; i++) {
+        ~ color{} GARM = CLOTH[i];
+
+        if (GARM.has(rgb_input)) {
+            index = i;
+            b = BASE_CLOTH[i];
+            found = true;
+        }
     }
 
     ~ color base = b;
@@ -300,7 +301,7 @@ replace_n_sels(~ color input, ~ int n -> replacement) {
             return $ColorProc.hsv(hue, s, v);
         }
 
-        return $ColorProc.hsv(c.hue, s, v, input.a);
+        return $ColorProc.hsv(c.hue, s, v);
     });
 }
 
