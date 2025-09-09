@@ -41,3 +41,11 @@ The material to follow along with the tutorial can be found in the `tutorial-con
 * [*Top Down Sprite Maker* on Itch.io](https://flinkerflitzer.itch.io/tdsm) - Buy the program
 * [*Top Down Sprite Maker* on GitHub](https://github.com/jbunke/tdsm) - Report a bug, keep up with development, or read the source code
 * [Approved sprite styles collection](https://itch.io/c/5834066/top-down-sprite-maker-approved-sprite-styles) - Download the sprite styles made or approved by the developer, or submit your own for official approval
+
+## Git
+
+This resource is a ***git repository***:
+
+```
+https://github.com/jbunke/tdsm-dev-guide.git
+```
